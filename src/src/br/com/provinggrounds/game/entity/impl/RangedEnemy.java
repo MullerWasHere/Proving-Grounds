@@ -1,23 +1,25 @@
 package br.com.provinggrounds.game.entity.impl;
 
-import org.newdawn.slick.Color;
 import org.newdawn.slick.GameContainer;
 import org.newdawn.slick.Graphics;
 
 import br.com.provinggrounds.game.dungeon.Dungeon;
 import br.com.provinggrounds.game.dungeon.Room;
 import br.com.provinggrounds.game.entity.Body;
-import br.com.provinggrounds.game.entity.Entity;
 import br.com.provinggrounds.game.entity.Body.Outline;
 import br.com.provinggrounds.game.entity.Body.Roundness;
+import br.com.provinggrounds.game.entity.Entity;
 import br.com.provinggrounds.game.game.MainGame;
 
 public class RangedEnemy extends Enemy{
 
+	static {
+		Body.registerClassBody(RangedEnemy.class, Roundness.MAXIMUM, Outline.MEDIUM);
+	}
+	
 	int shootCooldown;
 	public RangedEnemy(float x, float y) {
 		super(MINIMUM_SIZE+MainGame.RANDOM.nextInt(12),x,y);
-		body = new Body(Color.pink, Roundness.MAXIMUM, Outline.MEDIUM);
 		velocityCap = 0.1f;
 		shootCooldown = SHOOT_DEFAULT_BASE_TIME + MainGame.RANDOM.nextInt(SHOOT_RANDOM_VALUE);
 	}

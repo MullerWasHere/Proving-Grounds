@@ -1,47 +1,57 @@
 package br.com.provinggrounds.game.entity.impl;
 
-import org.newdawn.slick.Color;
 import org.newdawn.slick.GameContainer;
 import org.newdawn.slick.Graphics;
 import org.newdawn.slick.Input;
 import org.newdawn.slick.geom.Rectangle;
 
+import br.com.provinggrounds.game.dungeon.Dungeon;
 import br.com.provinggrounds.game.dungeon.Room;
 import br.com.provinggrounds.game.entity.Body;
 import br.com.provinggrounds.game.entity.Body.Outline;
 import br.com.provinggrounds.game.entity.Body.Roundness;
+import br.com.provinggrounds.game.entity.wpn.BaseWeapon;
+import br.com.provinggrounds.game.entity.wpn.CommonGun;
 import br.com.provinggrounds.game.entity.Entity;
 import br.com.provinggrounds.game.game.Audio;
 
 public class Player extends Entity {
 	
-	private int gunTimer;
 	private int gold;
 	private int hp;
 	private int invulTimer;
-	private int maxhp;
+	private int maxhp, maxmaxhp;
 	private boolean inDialog = false;
-	private float atkdmg = 1.0f;
-	private int atkspdCooldown = 300;
+	private boolean col = false;
+	private BaseWeapon wpn;
+	
+	static {
+		Body.registerClassBody(Player.class, Roundness.MEDIUM, Outline.MEDIUM);
+	}
 
 	public Player() {
 		super(SIDE_SIZE, Type.PLAYER);
+		body = Body.getClassBody(Player.class);
 		velocityCap = .3f;
-		body = new Body(new Color(0x4F5470), Roundness.MEDIUM,
-				Outline.MEDIUM);
 		showTooltip = true;
-		tooltip = new String("Você '-'");
+		tooltip = new String("VocÃª '-'");
 		gold = 0;
 		hp = maxhp = 3;
+		maxmaxhp = 8;
 		removesProjectile = false;
+		wpn = new CommonGun();
 	}
 
 	@Override
 	public void collideAndCallback(Entity other, Room room, int delta) {
 		
 		//APOS ISSO CHECK COM PAREDE
-		if (!other.isCollidable())
+		if (!other.isCollidable() || col) //TESTE
 			return;
+		
+		if(other.canPass())
+			return;
+		
 		float displacementX = (getVelocityCap() * getVelX()) * delta;
 		float displacementY = (getVelocityCap() * getVelY()) * delta;
 		Rectangle newrect = new Rectangle(getRectangle().getX(), getRectangle()
@@ -97,32 +107,50 @@ public class Player extends Entity {
 				setDirection(Direction.LEFT);
 				setVelX(-1);
 			}
+			
+			if(input.isKeyPressed(Input.KEY_P)){
+				Dungeon.togglePause();
+			}
+			
+			if(input.isKeyPressed(Input.KEY_M)){
+				Audio.audio.playMsCalm();
+			}
+			
+			if(input.isKeyPressed(Input.KEY_SPACE) && room.getRoomType() == Room.Type.TUTORIAL1)
+				Dungeon.placePlayerAt(Dungeon.getRoom(4, 2));
+			
+			if(input.isKeyPressed(Input.KEY_O))
+				col = !col;
 
-			if (gunTimer >= atkspdCooldown) {
-				if (input.isKeyDown(Input.KEY_UP)) {
-					room.addEntity(new Bullet(Direction.UP, getRectangle()
-							.getX() + getRectangle().getWidth() / 2,
-							getRectangle().getY() - BULLET_DISTANCE_PLAYER));
-					gunTimer = 0;
-				} else if (input.isKeyDown(Input.KEY_DOWN)) {
-					room.addEntity(new Bullet(Direction.DOWN, getRectangle()
-							.getX() + getRectangle().getWidth() / 2,
-							getRectangle().getY() + getRectangle().getHeight()
-									+ BULLET_DISTANCE_PLAYER));
-					gunTimer = 0;
-				} else if (input.isKeyDown(Input.KEY_LEFT)) {
-					room.addEntity(new Bullet(Direction.LEFT, getRectangle()
-							.getX() - BULLET_DISTANCE_PLAYER, getRectangle()
-							.getY() + rectangle.getHeight() / 2));
-					gunTimer = 0;
-				} else if (input.isKeyDown(Input.KEY_RIGHT)) {
-					room.addEntity(new Bullet(Direction.RIGHT, getRectangle()
-							.getX()
-							+ getRectangle().getWidth()
-							+ BULLET_DISTANCE_PLAYER, getRectangle().getY()
-							+ getRectangle().getHeight() / 2));
-					gunTimer = 0;
-				}
+			//Bullet b = null;
+			if (input.isKeyDown(Input.KEY_UP)) {
+				// room.addEntity(new Bullet(Direction.UP, getRectangle()
+				// .getX() + getRectangle().getWidth() / 2,
+				// getRectangle().getY() - BULLET_DISTANCE_PLAYER));
+				wpn.tryShoot(getRectangle().getX() + getRectangle().getWidth()/2,
+						getRectangle().getY() - BULLET_DISTANCE_PLAYER, 0, -1, room);
+			} else if (input.isKeyDown(Input.KEY_DOWN)) {
+				// room.addEntity(new Bullet(Direction.DOWN, getRectangle()
+				// .getX() + getRectangle().getWidth() / 2,
+				// getRectangle().getY() + getRectangle().getHeight()
+				// + BULLET_DISTANCE_PLAYER));
+				wpn.tryShoot(getRectangle().getX() + getRectangle().getWidth()/2,
+						getRectangle().getY() +getRectangle().getHeight() + BULLET_DISTANCE_PLAYER,
+						0, 1, room);
+			} else if (input.isKeyDown(Input.KEY_LEFT)) {
+				// room.addEntity(new Bullet(Direction.LEFT, getRectangle()
+				// .getX() - BULLET_DISTANCE_PLAYER, getRectangle()
+				// .getY() + rectangle.getHeight() / 2));
+				wpn.tryShoot(getRectangle().getX() - BULLET_DISTANCE_PLAYER,
+						getRectangle().getY() + rectangle.getHeight() / 2, -1, 0, room);
+			} else if (input.isKeyDown(Input.KEY_RIGHT)) {
+				// room.addEntity(new Bullet(Direction.RIGHT, getRectangle()
+				// .getX()
+				// + getRectangle().getWidth()
+				// + BULLET_DISTANCE_PLAYER, getRectangle().getY()
+				// + getRectangle().getHeight() / 2));
+				wpn.tryShoot(getRectangle().getX() + getRectangle().getWidth() + BULLET_DISTANCE_PLAYER,
+						getRectangle().getY() + getRectangle().getHeight()/2, 1, 0, room);
 			}
 		}
 	}
@@ -131,12 +159,12 @@ public class Player extends Entity {
 	public void update(GameContainer c, int delta, Room room) {
 		if(invulTimer > 0)
 			invulTimer-=delta;
-		gunTimer += delta;
 		float displacementX = (getVelocityCap() * getVelX()) * delta;
 		float displacementY = (getVelocityCap() * getVelY()) * delta;
 
 		rectangle.setX(rectangle.getX() + displacementX);
 		rectangle.setY(rectangle.getY() + displacementY);
+		wpn.updateTimer(delta);
 	}
 	
 	@Override
@@ -154,8 +182,12 @@ public class Player extends Entity {
 	public void hitByEnemy(){
 		if(invulTimer <= 0){
 			hp--;
+			if(hp == 0){
+				Audio.audio.playFxGameOver();
+			}
 			invulTimer = 900;
 			Audio.audio.playFxHit();
+			Audio.audio.stopMusic();
 		}
 	}
 	
@@ -172,8 +204,11 @@ public class Player extends Entity {
 	}
 	
 	public void incMaxHp(int amount){
-		maxhp += amount;
-		hp+=amount;
+		if(maxhp + amount < maxmaxhp){
+			maxhp += amount;
+			hp += amount;
+		}
+
 	}
 	
 	public void incHp(int hp){
@@ -182,19 +217,23 @@ public class Player extends Entity {
 	}
 	
 	public void setAtkDmg(float atkdmg){
-		this.atkdmg = atkdmg;
+		wpn.setAD(atkdmg);
 	}
 	
 	public float getAtkDmg(){
-		return atkdmg;
+		return wpn.getAD();
+	}
+	
+	public void setWeapon(BaseWeapon wpn){
+		this.wpn = wpn;
 	}
 	
 	public void setAtkSpdCooldown(int atkspdCooldown){
-		this.atkspdCooldown = atkspdCooldown;
+		this.wpn.setGunCooldown(atkspdCooldown);
 	}
 	
 	public int getAtkSpdCoolDown(){
-		return atkspdCooldown;
+		return this.wpn.getGunCooldown();
 	}
 	
 	public void addGold(int amount){

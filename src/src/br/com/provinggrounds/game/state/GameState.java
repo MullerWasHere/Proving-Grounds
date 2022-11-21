@@ -7,6 +7,8 @@ import org.newdawn.slick.state.BasicGameState;
 import org.newdawn.slick.state.StateBasedGame;
 
 import br.com.provinggrounds.game.dungeon.Dungeon;
+import br.com.provinggrounds.game.game.Audio;
+import br.com.provinggrounds.game.game.Fonts;
 import br.com.provinggrounds.game.game.MainGame;
 
 public class GameState extends BasicGameState {
@@ -29,11 +31,16 @@ public class GameState extends BasicGameState {
 	public void update(GameContainer container, StateBasedGame game, int delta)
 			throws SlickException {
 		dungeon.update(container, game, delta);
+		Audio.audio.audioUpdate(delta, Dungeon.getCurrentRoom());
 	}
 
 	@Override
 	public int getID() {
 		return MainGame.STATE_GAME;
+	}
+	
+	public static void enterGame(){
+		Audio.audio.playMsCalm();
 	}
 
 }

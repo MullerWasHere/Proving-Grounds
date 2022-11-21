@@ -1,6 +1,5 @@
 package br.com.provinggrounds.game.entity.impl;
 
-import org.newdawn.slick.Color;
 import org.newdawn.slick.GameContainer;
 
 import br.com.provinggrounds.game.dungeon.Dungeon;
@@ -12,8 +11,10 @@ import br.com.provinggrounds.game.entity.Entity;
 import br.com.provinggrounds.game.game.MainGame;
 
 public class Hole extends Entity{
-
-
+	
+	static {
+		Body.registerClassBody(Hole.class, Roundness.MAXIMUM, Outline.MINIMUM);
+	}
 
 	public Hole() {
 		super(STAIR_SIZE, Type.STAIRS);
@@ -21,9 +22,9 @@ public class Hole extends Entity{
 		int cornery = MainGame.RANDOM.nextInt(2);
 		this.rectangle.setX(Wall.WALL_WIDTH + WALL_DISTANCE + (cornerx * (Room.ROOM_SIZE_WIDTH-WALL_DISTANCE*2-Wall.WALL_WIDTH*2-STAIR_SIZE)));
 		this.rectangle.setY(Wall.WALL_HEIGHT + WALL_DISTANCE + (cornery * (Room.ROOM_SIZE_HEIGHT-WALL_DISTANCE*2-Wall.WALL_HEIGHT*2-STAIR_SIZE)));
-		body = new Body(Color.black, Roundness.MAXIMUM, Outline.NONE);
-		collidable = false;
 		showTooltip = true;
+		collidable = true;
+		canPassThrough = true;
 		tooltip = new String("Um buraco.. nao caia nele!");
 	}
 
@@ -39,8 +40,7 @@ public class Hole extends Entity{
 
 	@Override
 	public void update(GameContainer c, int delta, Room room) {
-		// TODO Auto-generated method stub
-		
+		super.update(c, delta, room);
 	}
 	
 	private static final int STAIR_SIZE = 48;

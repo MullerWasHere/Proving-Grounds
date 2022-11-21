@@ -9,9 +9,6 @@ import br.com.provinggrounds.game.dungeon.Room;
 import br.com.provinggrounds.game.game.Fonts;
 
 public abstract class Entity {
-	public Body getBody() {
-		return body;
-	}
 	
 	private boolean removeEntity = false;
 
@@ -21,6 +18,7 @@ public abstract class Entity {
 	protected boolean isVisible;
 
 	protected boolean collidable = true;
+	protected boolean canPassThrough = false;
 	protected boolean showTooltip = false;
 	protected float velX, velY;
 	protected Type type;
@@ -32,6 +30,7 @@ public abstract class Entity {
 	protected String tooltip;
 	protected Entity(float x, float y, float width, float height, String tooltip, Type type)
 	{
+		body = Body.getClassBody(this.getClass());
 		isVisible = true;
 		this.type = type;
 		this.rectangle = new Rectangle(
@@ -64,7 +63,7 @@ public abstract class Entity {
 			g.drawRoundRect(rectangle.getX(), rectangle.getY(), rectangle.getWidth(), rectangle.getHeight(), roundFactor);
 		}
 		
-		if(MouseManager.mouse.isMouseOver(this) && showTooltip){			
+		if(MouseManager.mouse.isMouseOver(this) && showTooltip && !MouseManager.isMouseGrabbed){			
 			g.setColor(Color.black);
 			int width = Fonts.tooltipFont.getWidth(tooltip);
 			int height = Fonts.tooltipFont.getHeight(tooltip);
@@ -79,8 +78,14 @@ public abstract class Entity {
 
 	public abstract void collideAndCallback(Entity other, Room room, int delta);
 	
-	public abstract void update(GameContainer c, int delta, Room room);
+	public void update(GameContainer c, int delta, Room room){
+		if(shouldRemove())
+			return;
+	}
 	
+	public Body getBody() {
+		return body;
+	}
 
 	public void event(GameContainer c, int delta, Room room) {return;}
 	
@@ -132,6 +137,10 @@ public abstract class Entity {
 		return removeEntity;
 	}
 	
+	public boolean canPass(){
+		return canPassThrough;
+	}
+	
 	public boolean shouldRemoveProjectile(){
 		return removesProjectile;
 	}
@@ -153,6 +162,6 @@ public abstract class Entity {
 	};
 
 	public static enum Type {
-		PLAYER, DOOR, WALL, BULLET, MELEE_ENEMY, STAIRS, NOTIFICATION, MOUSE, POTION, MERCHANT, ARROW
+		PLAYER, DOOR, WALL, BULLET, MELEE_ENEMY, STAIRS, NOTIFICATION, MOUSE, POTION, MERCHANT, ARROW, CHEST
 	};
 }

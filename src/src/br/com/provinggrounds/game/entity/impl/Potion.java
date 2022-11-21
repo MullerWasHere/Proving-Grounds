@@ -8,6 +8,7 @@ import br.com.provinggrounds.game.dungeon.Room;
 import br.com.provinggrounds.game.entity.Body;
 import br.com.provinggrounds.game.entity.Body.Outline;
 import br.com.provinggrounds.game.entity.Body.Roundness;
+import br.com.provinggrounds.game.entity.Notification.Effect;
 import br.com.provinggrounds.game.entity.Entity;
 import br.com.provinggrounds.game.entity.Notification;
 import br.com.provinggrounds.game.game.Audio;
@@ -18,30 +19,25 @@ public class Potion extends Entity{
 
 	private long expiresTimer = 0;
 	private POTIONTYPE potiontype;
+	
+	static {
+		Body.registerClassBody(Potion.class, Roundness.MEDIUM, Outline.MINIMUM);
+	}
+	
 	protected Potion(float x, float y) {
 		//super(18, Entity.Type.POTION);
-		super(x,y,POTION_SIZE,POTION_SIZE,"PoÁ„o de vida!",Entity.Type.POTION);
+		super(x,y,POTION_SIZE,POTION_SIZE,"Po√ß√£o de vida!",Entity.Type.POTION);
 		potiontype = POTIONTYPE.HP;
+		
 		if(MainGame.RANDOM.nextInt(20) > POTIONTYPE.MAXHP.chance){
 			System.out.println("vida maxima!");
-			tooltip = "PoÁ„o de vida m·xima!";
-			body = new Body(Color.cyan, Roundness.MEDIUM, Outline.NONE);
+			tooltip = "Po√ß√£o de vida m√°xima!";
 			potiontype = POTIONTYPE.MAXHP;
-		}
-		else if(MainGame.RANDOM.nextInt(20) > POTIONTYPE.ATKDMG.chance){
-			tooltip = "PoÁ„o de dano de ataque!";
-			body = new Body(Color.green, Roundness.MEDIUM, Outline.NONE);
-			potiontype = POTIONTYPE.ATKDMG;
-		}
-		else if(MainGame.RANDOM.nextInt(20) > POTIONTYPE.ATKSPD.chance){
-			tooltip = "PoÁ„o de velocidade de ataque!";
-			body = new Body(Color.cyan, Roundness.MEDIUM, Outline.NONE);
-			potiontype = POTIONTYPE.ATKSPD;
 		}else{
-			body = new Body(Color.pink, Roundness.MEDIUM, Outline.NONE);
 			potiontype = POTIONTYPE.HP;
 		}
-		collidable = false;
+		collidable = true;
+		canPassThrough = true;
 		showTooltip = true;
 		
 		removesProjectile = false;
@@ -58,15 +54,10 @@ public class Potion extends Entity{
 				case 1:
 					Dungeon.getPlayer().incMaxHp(1);
 					break;
-				case 2:
-					Dungeon.getPlayer().setAtkDmg(Dungeon.getPlayer().getAtkDmg() + 1.0f);
-					break;
-				case 3:
-					Dungeon.getPlayer().setAtkSpdCooldown(Dungeon.getPlayer().getAtkSpdCoolDown() - 10);
-					break;
 				}
 				Audio.audio.playFxPowerUp();
-				room.addNotification("VocÍ pega uma " + potiontype.titulo, getRectangle().getX(), getRectangle().getY(), 0, Fonts.enemyKilledFont, Color.white, Notification.TIME_LONG);
+				room.addNotification("Voc√™ pega uma po√ß√£o " + potiontype.titulo, getRectangle().getX(), getRectangle().getY(), Notification.Time.NONE, Fonts.enemyKilledFont, Color.white,
+						Notification.Time.DEFAULT, Effect.UP);
 				removeEntity();
 			}
 		}
@@ -74,6 +65,7 @@ public class Potion extends Entity{
 
 	@Override
 	public void update(GameContainer c, int delta, Room room) {
+		super.update(c, delta, room);
 		if(expiresTimer == 0)
 			expiresTimer = c.getTime()+POTION_EXPIRE;
 		if(c.getTime() >= expiresTimer){
@@ -86,7 +78,7 @@ public class Potion extends Entity{
 	private static final int POTION_EXPIRE = 5000;
 	
 	private enum POTIONTYPE{
-		HP(0,0, "de vida"), MAXHP(1,15, "de vida m·xima"), ATKDMG(2,17, "de dano de ataque"), ATKSPD(3,16, "de velocidade de ataque");
+		HP(0,0, "de vida"), MAXHP(1,15, "de vida m√°xima");
 		public final int id;
 		public final int chance;
 		public final String titulo;

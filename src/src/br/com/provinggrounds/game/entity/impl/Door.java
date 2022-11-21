@@ -1,6 +1,5 @@
 package br.com.provinggrounds.game.entity.impl;
 
-import org.newdawn.slick.Color;
 import org.newdawn.slick.GameContainer;
 
 import br.com.provinggrounds.game.dungeon.Dungeon;
@@ -15,10 +14,14 @@ public class Door extends Entity{
 	private int goToRoomId;
 	private Dungeon.Direction doorDirection;
 	
+	static {
+		Body.registerClassBody(Door.class, Roundness.NONE, Outline.MINIMUM);
+	}
+	
 	public Door(int x, int y, Dungeon.Direction doorDirection, int goToRoomId) {
 		super(x, y, DOOR_WIDTH, DOOR_HEIGHT, "", Type.WALL);
-		body = new Body(Color.red, Roundness.NONE, Outline.NONE);
-		collidable = false;
+		collidable = true;
+		canPassThrough = true;
 		this.goToRoomId = goToRoomId;
 		this.doorDirection = doorDirection;
 		this.isVisible = false;
@@ -26,14 +29,30 @@ public class Door extends Entity{
 	}
 
 	@Override
-	public void update(GameContainer c, int delta, Room room) { }
+	public void update(GameContainer c, int delta, Room room) {
+		super.update(c, delta, room);
+	}
 
 	@Override
 	public void collideAndCallback(Entity other, Room room, int delta) {
 		if(other.getType() == Type.PLAYER && other.getRectangle().intersects(getRectangle())){
+
 			Dungeon.changeRoom(doorDirection, goToRoomId, room);
+			Room roomtg = Dungeon.getRoomAt(doorDirection, room);
+			if(doorDirection == Dungeon.Direction.ABOVE && !roomtg.hasBottomDoor()){
+				System.out.println("replicado");
+			}
+			if(doorDirection == Dungeon.Direction.DOWN && !roomtg.hasTopDoor()){
+				System.out.println("replicado");
+			}
+			if(doorDirection == Dungeon.Direction.LEFT && !roomtg.hasRightDoor()){
+				System.out.println("replicado");
+			}
+			if(doorDirection == Dungeon.Direction.RIGHT && !roomtg.hasLeftDoor()){
+				System.out.println("replicado");
+			}
 			//room.changeRoom(doorDirection, goToRoomId);
-			room.removeProjectiles();
+			//room.removeProjectiles();
 			//System.out.println("player enters the door to room: " + goToRoomId);
 		}
 	}

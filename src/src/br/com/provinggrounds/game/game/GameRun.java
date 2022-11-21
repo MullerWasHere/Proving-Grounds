@@ -12,13 +12,14 @@ public class GameRun {
 			app.setResizable(true);
 			app.setTargetFrameRate(60);
 			//app.setFullscreen(true);
-			app.setShowFPS(true);
+			
+			app.setShowFPS(false);
 			app.start();
 		} catch (SlickException e) {
 			e.printStackTrace();
 		}
 	}
-	public static final int WINDOW_HEIGHT = 576;
-	public static final int WINDOW_WIDTH = 1024;
+	public static final int WINDOW_HEIGHT = 720;
+	public static final int WINDOW_WIDTH = 1280;
 	
 }

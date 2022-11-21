@@ -9,14 +9,18 @@ import org.newdawn.slick.Input;
 import org.newdawn.slick.SlickException;
 import org.newdawn.slick.state.StateBasedGame;
 
-import br.com.provinggrounds.game.dungeon.Room.Type;
+import br.com.provinggrounds.game.entity.Body;
 import br.com.provinggrounds.game.entity.HUD;
 import br.com.provinggrounds.game.entity.MouseManager;
 import br.com.provinggrounds.game.entity.Notification;
+import br.com.provinggrounds.game.entity.Notification.Effect;
+import br.com.provinggrounds.game.entity.Notification.Time;
 import br.com.provinggrounds.game.entity.impl.Player;
 import br.com.provinggrounds.game.entity.impl.Wall;
 import br.com.provinggrounds.game.game.Audio;
 import br.com.provinggrounds.game.game.Fonts;
+import br.com.provinggrounds.game.game.GameRun;
+import br.com.provinggrounds.game.game.MainGame;
 
 public class Dungeon {
 
@@ -30,49 +34,65 @@ public class Dungeon {
 	
 	private static Room curRoom = null;
 	private static int curLevel = -1;
+	
+	private static boolean pause = false;
 
 	public Dungeon()
 	{
 		Audio.audio.initialize();
-		Fonts.initialize();
-		generateLevelGrid();
-		addPlayerToGrid();
+		try {
+			Fonts.initialize();
+		} catch (SlickException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		startNewGame();
 	}
 
 	public void update(GameContainer container, StateBasedGame game, int delta) {
 		if (player.getHp() == 0) {
 			Input input = container.getInput();
+			
 			if(input.isKeyPressed(Input.KEY_R)){
-				restartGame();
+				startNewGame();
+			}else if(input.isKeyPressed(Input.KEY_SPACE)){
+				if(player.getGold() >= 1000){
+					player.setHp(player.getMaxHp()/2);
+					player.addGold(-1000);
+				}
 			}
 		} else {
 			MouseManager.mouse.update(container, delta, null);
 			player.event(container, delta, getCurrentRoom());
+			if(pause)
+				return;
 			getCurrentRoom().update(container, delta);
-			hud.update(container, delta);
-			// System.out.println(delta);
 		}
 
 	}
 
 	public void render(GameContainer container, StateBasedGame game, Graphics g)
 			throws SlickException {
-		if(player.getHp() == 0)
-			Fonts.levelChangeFont.drawString(200, 200, "GAME OVER!");
-		else{
-			getCurrentRoom().render(g);
-			hud.render(g);			
+		if(player.getHp() == 0){
+			int y = GameRun.WINDOW_HEIGHT/3;
+			String gameOver = "Game Over!";
+			String returnGame = "Se voce tiver 1000 de gold, aperte 'Espaço' para continuar";
+			String restart = "Aperte 'R' para recomeçar";
+			
+			Fonts.levelChangeFont.drawString(GameRun.WINDOW_WIDTH/2 - Fonts.levelChangeFont.getWidth(gameOver)/2, y, gameOver);
+			y += Fonts.levelChangeFont.getLineHeight();
+			Fonts.levelChangeFont.drawString(GameRun.WINDOW_WIDTH/2 - Fonts.levelChangeFont.getWidth(restart)/2, y, restart);
+			
+			Fonts.levelChangeFont.drawString(GameRun.WINDOW_WIDTH/2 - Fonts.levelChangeFont.getWidth(returnGame)/2, GameRun.WINDOW_HEIGHT - Fonts.levelChangeFont.getLineHeight(), returnGame);
 		}
-
-		
-		//player.render(g);
-		//g.drawString(String.valueOf(roomPoint.y), 250, 250);
+		else {
+			hud.render(g);			
+			getCurrentRoom().render(g);
+		}
 	}
 	
 	public static Room getCurrentRoom()
 	{
-		//System.out.println(levelgrid[roomPoint.x % Dungeon.GRID_WIDTH][roomPoint.y / Dungeon.GRID_HEIGHT].getRoomId());
-		//return levelgrid[Dungeon.roomPoint.x % Dungeon.GRID_WIDTH][Dungeon.roomPoint.y / Dungeon.GRID_HEIGHT];
 		return curRoom;
 	}
 	
@@ -84,99 +104,146 @@ public class Dungeon {
 		return player;
 	}
 	
-	public static void generateLevelGrid(){
-		int level = getCurrentLevel() + 1;
+	public static void generateLevelGrid(int px, int py, Room.Type type){
 		Room[][] newlevelgrid = new Room[Dungeon.GRID_WIDTH][Dungeon.GRID_HEIGHT];
 		curlevelgrid = newlevelgrid;
-		//levelgrid = new Room[Dungeon.GRID_WIDTH][Dungeon.GRID_HEIGHT];
-		for(int x = 0; x < Dungeon.GRID_WIDTH; x++){
-			for(int y = 0;y < Dungeon.GRID_HEIGHT; y++){
-				newlevelgrid[x][y] = new Room(x + Dungeon.GRID_WIDTH * y);
-			}
+		if(px < 0 || py < 0)
+		{
+			px = MainGame.RANDOM.nextInt(Dungeon.GRID_WIDTH);
+			py = MainGame.RANDOM.nextInt(Dungeon.GRID_HEIGHT);
 		}
+
+		if(type==null)
+			newlevelgrid[px][py] = new Room(px + Dungeon.GRID_WIDTH * py);
+		else
+			newlevelgrid[px][py] = new Room(px + Dungeon.GRID_WIDTH * py, type);
 		
-		for(int x = 0; x < Dungeon.GRID_WIDTH; x++){
-			for(int y = 0;y < Dungeon.GRID_HEIGHT; y++){
-				newlevelgrid[x][y].decideWalls();
-			}
-		}
+		curRoom = newlevelgrid[px][py];
+		//Audio.audio.playMsCalm();
+//		curRoom.decideWalls();
+//		curRoom.generateRoom();
+//		curRoom.generateExtras(level);
 		
-		for(int x = 0; x < Dungeon.GRID_WIDTH; x++){
-			for(int y = 0;y < Dungeon.GRID_HEIGHT; y++){
-				newlevelgrid[x][y].generateRoom();
-			}
-		}
+//		for(int x = 0; x < Dungeon.GRID_WIDTH; x++){
+//			for(int y = 0;y < Dungeon.GRID_HEIGHT; y++){
+//				newlevelgrid[x][y] = new Room(x + Dungeon.GRID_WIDTH * y);
+//			}
+//		}
+
 		
-		for(int x = 0; x < Dungeon.GRID_WIDTH; x++){
-			for(int y = 0;y < Dungeon.GRID_HEIGHT; y++){
-				newlevelgrid[x][y].generateExtras(level);
-			}
-		}
+//		for(int x = 0; x < Dungeon.GRID_WIDTH; x++){
+//			for(int y = 0;y < Dungeon.GRID_HEIGHT; y++){
+//				newlevelgrid[x][y].decideWalls();
+//			}
+//		}
+//		
+//		for(int x = 0; x < Dungeon.GRID_WIDTH; x++){
+//			for(int y = 0;y < Dungeon.GRID_HEIGHT; y++){
+//				newlevelgrid[x][y].generateRoom();
+//			}
+//		}
+//		
+//		for(int x = 0; x < Dungeon.GRID_WIDTH; x++){
+//			for(int y = 0;y < Dungeon.GRID_HEIGHT; y++){
+//				newlevelgrid[x][y].generateExtras(level);
+//			}
+//		}
 				
 		dungeonlevels.add(newlevelgrid);
 	}
 	
-	public void restartGame(){
+	public static void generateLevelGrid(int px, int py){
+		generateLevelGrid(px, py, null);
+	}
+	
+	public static void addRoomToGrid(int px, int py, Room.Type type){
+		curlevelgrid[px][py] = new Room(px + Dungeon.GRID_WIDTH * py, type);
+	}
+	
+	public void startNewGame(){
 		
 		dungeonlevels.clear();
-		curLevel = -1;
+		curLevel = 0;
 		curRoom = null;
 		player = new Player();
-		generateLevelGrid();
-		addPlayerToGrid();
+		generateLevelGrid(2,2,Room.Type.TUTORIAL1);
+		addRoomToGrid(3,2,Room.Type.TUTORIAL2);
+		addRoomToGrid(4,2,Room.Type.TUTORIAL3);
 	}
 
-	private void addPlayerToGrid() {
-		curRoom = null;
-		curLevel++;
-		//curlevelgrid = dungeonlevels.get(0);
-		for (int x = 0; x < Dungeon.GRID_WIDTH && curRoom == null; x++) {
-			for (int y = 0; y < Dungeon.GRID_HEIGHT && curRoom == null; y++) {
-				if (curlevelgrid[x][y].getRoomType() == Type.EMPTYROOM) {
-					curRoom = curlevelgrid[x][y];
-				}
-			}
-		}
-	}
+//	private void addPlayerToGrid() {
+//		curRoom = null;
+//		curLevel++;
+//		//curlevelgrid = dungeonlevels.get(0);
+//		for (int x = 0; x < Dungeon.GRID_WIDTH && curRoom == null; x++) {
+//			for (int y = 0; y < Dungeon.GRID_HEIGHT && curRoom == null; y++) {
+//				if (curlevelgrid[x][y].getRoomType() == Type.EMPTYROOM) {
+//					curRoom = curlevelgrid[x][y];
+//				}
+//			}
+//		}
+//	}
 	
 	public static void changeRoom(Direction doorDirection, int roomId, Room room){
 		room.removeNotifications();
+		Body.redefineColors();
 		Dungeon.curRoom = curlevelgrid[roomId%Dungeon.GRID_WIDTH][roomId/Dungeon.GRID_HEIGHT];
+		int x,y;
+		x = room.getRoomId()%Dungeon.GRID_WIDTH;
+		y = room.getRoomId()/Dungeon.GRID_HEIGHT;
 		
 		if(doorDirection == Direction.ABOVE){
 			player.setY(Room.ROOM_SIZE_HEIGHT-Wall.WALL_HEIGHT-5);
+			y--;
 		}else if(doorDirection == Direction.DOWN){
-			//player.setX(GameRun.WINDOW_WIDTH/2 - player.getRectangle().getWidth() /2);
-			//player.setY(0 + player.getRectangle().getHeight());
 			player.setY(10);
+			y++;
 		}else if(doorDirection == Direction.LEFT){
 			player.setX(Room.ROOM_SIZE_WIDTH-Wall.WALL_WIDTH-5);
-			//player.setY((GameRun.WINDOW_HEIGHT/2) - player.getRectangle().getHeight()/2);
+			x--;
 		}else{
 			player.setX(5);
-			//player.setY((GameRun.WINDOW_HEIGHT/2) - player.getRectangle().getHeight()/2);
+			x++;
 		}
+		if(curRoom == null){
+			curlevelgrid[x][y] = new Room(x + Dungeon.GRID_WIDTH * y);
+			curRoom = curlevelgrid[x][y];
+		}
+	}
+	
+	public static void placePlayerAt(Room room){
+		//TERMINAR FUNÇÃO
+		curRoom = room;
+	}
+	
+	public static Room getRoom(int x, int y){
+		return curlevelgrid[x][y];
 	}
 	
 	public static void changeLevel(int curRoomId, int amount){
 		if(curLevel + amount < 0)
 			return;
 		if(curLevel + amount > dungeonlevels.size()-1){
-			generateLevelGrid();
+//			boolean quit = false;
+			curRoom.removeNotifications();
+			generateLevelGrid(curRoomId%Dungeon.GRID_WIDTH,curRoomId/Dungeon.GRID_HEIGHT);
 			curlevelgrid = dungeonlevels.get(dungeonlevels.size()-1);
-			boolean quit = false;
-			for(int x = 0; x < GRID_WIDTH && quit == false; x++){
-				for(int y = 0; y < GRID_HEIGHT && quit == false; y++){
-					if(curlevelgrid[x][y].getRoomId() == curRoomId){
-						curRoom.removeNotifications();
-						curRoom = curlevelgrid[x][y];
-						curRoom.addNotification("Voce desce mais um nivel... +25 gold!", 200, 200, 0,Fonts.levelChangeFont, Color.white, Notification.TIME_LONG);
-						Audio.audio.playFxPowerUp();
-						player.addGold(25);
-						quit = true;
-					}
-				}
-			}
+			//curRoom = curlevelgrid[curRoomId%Dungeon.GRID_WIDTH][curRoomId/Dungeon.GRID_HEIGHT];
+			curRoom.addNotification("Voce desce mais um nivel... +25 gold!", 200, 200, Time.NONE ,Fonts.levelChangeFont, Color.white, Notification.Time.LONG,Effect.UP);
+			Audio.audio.playFxPowerUp();
+			player.addGold(25);
+//			for(int x = 0; x < GRID_WIDTH && quit == false; x++){
+//				for(int y = 0; y < GRID_HEIGHT && quit == false; y++){
+//					if(curlevelgrid[x][y].getRoomId() == curRoomId){
+//						curRoom.removeNotifications();
+//						curRoom = curlevelgrid[x][y];
+//						curRoom.addNotification("Voce desce mais um nivel... +25 gold!", 200, 200, 0,Fonts.levelChangeFont, Color.white, Notification.TIME_LONG);
+//						Audio.audio.playFxPowerUp();
+//						player.addGold(25);
+//						quit = true;
+//					}
+//				}
+//			}
 		}
 		curLevel += amount;
 	}
@@ -185,7 +252,6 @@ public class Dungeon {
 		int roomX, roomY;
 		roomX = room.getRoomId()%Dungeon.GRID_WIDTH;
 		roomY = room.getRoomId()/Dungeon.GRID_HEIGHT;
-		//System.out.println(roomX + "-" + roomY );
 		if(direction == Direction.ABOVE &&
 				roomY== 0)
 			return false;
@@ -241,6 +307,10 @@ public class Dungeon {
 		}
 		
 		return curlevelgrid[roomX][roomY];
+	}
+	
+	public static void togglePause(){
+		pause = !pause;
 	}
 	
 	

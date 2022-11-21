@@ -8,6 +8,11 @@ import br.com.provinggrounds.game.dungeon.Room;
 import br.com.provinggrounds.game.entity.Body;
 import br.com.provinggrounds.game.entity.Body.Outline;
 import br.com.provinggrounds.game.entity.Body.Roundness;
+import br.com.provinggrounds.game.entity.Notification.Effect;
+import br.com.provinggrounds.game.entity.Notification.Time;
+import br.com.provinggrounds.game.entity.wpn.CommonGun;
+import br.com.provinggrounds.game.entity.wpn.Shotgun;
+import br.com.provinggrounds.game.entity.wpn.Smg;
 import br.com.provinggrounds.game.entity.MerchantDialog;
 import br.com.provinggrounds.game.entity.Entity;
 import br.com.provinggrounds.game.entity.Notification;
@@ -20,11 +25,16 @@ public class Merchant extends Entity{
 	private int timerDialog = 0;
 	private SELLS sells;
 	
+	static {
+		Body.registerClassBody(Merchant.class, Roundness.NONE, Outline.MINIMUM);
+	}
+	
 	public Merchant(float x, float y){
 		super(x,y,48,48,"Um mercador!",Type.MERCHANT);
 		showTooltip = true;
-		body = new Body(Color.gray, Roundness.NONE, Outline.NONE);
-		collidable = false;
+		collidable = true;
+		canPassThrough = true;
+		removesProjectile = true;
 		sells = SELLS.values()[MainGame.RANDOM.nextInt(SELLS.values().length)];
 	}
 
@@ -35,12 +45,13 @@ public class Merchant extends Entity{
 				room.setDialog(new MerchantDialog("Deseja comprar " + sells.name +" por " + String.valueOf(sells.price) + "?"));
 			}
 			else if(other.getType() == Type.BULLET){
-				room.addNotification("Você matou o mercado!! :O", getRectangle().getX(), getRectangle().getY(),
-						0, Fonts.enemyKilledFont, Color.red, Notification.TIME_LONG);
+				room.addNotification("VocÃª matou o mercado!! :O", getRectangle().getX(), getRectangle().getY(),
+						Time.NONE, Fonts.enemyKilledFont, Color.red, Notification.Time.LONG, Effect.UP);
 				room.addNotification("+100 gold!", getRectangle().getX(), getRectangle().getY(),
-						Notification.TIME_LONG, Fonts.enemyKilledFont, Color.yellow, Notification.TIME_LONG);
+						Notification.Time.SHORT, Fonts.enemyKilledFont, Color.yellow, Notification.Time.LONG, Effect.UP);
 				Dungeon.getPlayer().addGold(100);
 				removeEntity();
+				other.removeEntity();
 			}
 		}
 	}
@@ -50,34 +61,39 @@ public class Merchant extends Entity{
 			return;
 		if(Dungeon.getPlayer().getGold() >= sells.price){
 			Dungeon.getPlayer().addGold(-sells.price);
-			room.addNotification("Você comprou " + sells.name +"!", getRectangle().getX(), getRectangle().getY(), 0, Fonts.enemyKilledFont,
-					Color.white, Notification.TIME_LONG);
-			room.addNotification("O mercador agora ira embora!", getRectangle().getX(), getRectangle().getY(), Notification.TIME_DEFAULT, Fonts.enemyKilledFont,
-					Color.white, Notification.TIME_LONG);
+			room.addNotification("VocÃª comprou " + sells.name +"!", getRectangle().getX(), getRectangle().getY(), Notification.Time.NONE, Fonts.enemyKilledFont,
+					Color.white, Notification.Time.LONG, Effect.UP);
+			room.addNotification("O mercador agora ira embora!", getRectangle().getX(), getRectangle().getY(), Notification.Time.VERYSHORT, Fonts.enemyKilledFont,
+					Color.white, Notification.Time.LONG, Effect.UP);
 			removeEntity();
 			switch(sells.id){
 			case 0: //POTION
 				Dungeon.getPlayer().incHp(1);
 				break;
 				
-			case 1: //AD
-				Dungeon.getPlayer().setAtkDmg(Dungeon.getPlayer().getAtkDmg() + 1.0f);
+			case 1: //SGUN
+				Dungeon.getPlayer().setWeapon(new Shotgun());
 				break;
 				
-			case 2: //ATK SPD
-				Dungeon.getPlayer().setAtkSpdCooldown(Dungeon.getPlayer().getAtkSpdCoolDown() - 10);
+			case 2: //CGUN
+				Dungeon.getPlayer().setWeapon(new CommonGun());
+				break;
+				
+			case 3:
+				Dungeon.getPlayer().setWeapon(new Smg());
 				break;
 			}
 			Audio.audio.playFxCoin();
 		}
 		else{
-			room.addNotification("Você não tem gold suficiente seu bastardo!", getRectangle().getX(), getRectangle().getY(), 0, Fonts.enemyKilledFont,
-					Color.red, Notification.TIME_LONG);
+			room.addNotification("VocÃª nÃ£o tem gold suficiente seu bastardo!", getRectangle().getX(), getRectangle().getY(), Notification.Time.NONE, Fonts.enemyKilledFont,
+					Color.red, Notification.Time.LONG, Effect.UP);
 		}
 	}
 
 	@Override
 	public void update(GameContainer c, int delta, Room room) {
+		super.update(c, delta, room);
 		if(timerDialog > 0)
 			timerDialog -= delta;
 	}
@@ -87,7 +103,8 @@ public class Merchant extends Entity{
 	}
 	
 	public static enum SELLS{
-		POTION("Pocao",20,0), DANO("Dano de ataque", 100, 1), VELOCIDADE("Velocidade de ataque", 150, 2);
+		POTION("Pocao",20,0), SGUN("Shotgun", 600, 1), CGUN("Pistola", 200, 2),
+		SMG("SMG", 450, 3);
 		
 		public final String name;
 		public final int price;
